@@ -3,55 +3,46 @@ name: Build Docker Image and Push to ECR
 on: 
   push:
     branches: [ master ]
-
-env:
-  ECR_REPO_PREFIX: ${{ secrets.ECR_REPO_PREFIX }}
-  IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
-
+    
 jobs:
-  build:    
-    name: Build Image
+  login-to-ecr:
+    name: Login to Amazon ECR
     runs-on: ubuntu-latest
+    outputs: 
+      registry: ${{ steps.login-ecr.outputs.registry }}
+    
+  build:    
+    name: Build, test and push image
+    runs-on: ubuntu-latest
+    needs: login-to-ecr
     strategy:
       matrix:
         ecr_repo: [cats, dogs]
-        
+    
+    env:
+      ECR_REGISTRY: ${{needs.login-to-ecr.outputs.registry}}
+      ECR_REPO_PREFIX: ${{ secrets.ECR_REPO_PREFIX }}
+      IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
+      REPO: ${{ matrix.ecr_repo }}
+      
     steps:
     - name: Check out code
       uses: actions/checkout@v2
-
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        AWS_REGION: us-east-1
         
     - name: Build docker image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        repo=${{ matrix.ecr_repo }}
-        cd cats-and-dogs/$repo/
+        cd cats-and-dogs/$REPO/
         ls -ltra
-        docker build -t $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG .
+        docker build -t $ECR_REGISTRY/$ECR_REPO_PREFIX-$REPO:$IMAGE_TAG .
     
     - name: Test docker image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        repo=${{ matrix.ecr_repo }}
-        docker run -d -p 80:80 --name $repo-app $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG
+        docker run -d -p 80:80 --name $REPO-app $ECR_REGISTRY/$ECR_REPO_PREFIX-$REPO:$IMAGE_TAG
         docker ps
         echo "Pause for 10 seconds to let container start"
         sleep 10
         curl localhost -vvv
 
-    - name: Push docker image to ECR
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+    - name: Push docker image to Amazon ECR
       run: |
-        repo=${{ matrix.ecr_repo }}
-        docker push $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPO_PREFIX-$REPO:$IMAGE_TAG
