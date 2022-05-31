@@ -4,6 +4,10 @@ on:
   push:
     branches: [ master ]
 
+env:
+  ECR_REPO_PREFIX: ${{ secrets.ECR_REPO_PREFIX }}
+  IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
+
 jobs:
   build:    
     name: Build Image
@@ -28,16 +32,44 @@ jobs:
     - name: Build docker image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPO_PREFIX: assign1-dev
-        IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
       run: |
         repo=${{ matrix.ecr_repo }}
         cd cats-and-dogs/$repo/
         ls -ltra
         docker build -t $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG .
+        
+  test-image:    
+    name: Test Image
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ecr_repo: [cats, dogs]
+        
+    steps:
+    - name: Test docker image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        repo=${{ matrix.ecr_repo }}
         docker run -d -p 80:80 --name $repo-app $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG
         docker ps
         echo "Pause for 10 seconds to let container start"
         sleep 10
         curl localhost -vvv
+       
+  push-image:    
+    name: Push Image to ECR
+    needs: test-image
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ecr_repo: [cats, dogs]
+
+    steps:
+    - name: Push docker image to ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        repo=${{ matrix.ecr_repo }}
         docker push $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG
