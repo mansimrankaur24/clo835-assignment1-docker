@@ -29,27 +29,15 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPO_PREFIX: assign1-dev
-        #ECR_REPO: cats dogs
-        IMAGE_TAG: v0.2
+        IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
       run: |
-        #for repo in $ECR_REPO; do
-          #cd cats-and-dogs/${repo}/
-          cd cats-and-dogs/${{ matrix.ecr_repo }}/
-          ls -ltra
-          docker build -t $ECR_REGISTRY/$ECR_REPO_PREFIX-${{ matrix.ecr_repo }}:$IMAGE_TAG .
-          if [[ ${repo} == 'cats' ]]; then
-            port=8080
-            echo "Port set to 8080 for cats app"
-          else
-            port=8081
-            echo "Port set to 8081 for dogs app"
-          fi
-          docker run -d -p $port:80 --name ${{ matrix.ecr_repo }}-app $ECR_REGISTRY/$ECR_REPO_PREFIX-${{ matrix.ecr_repo }}:$IMAGE_TAG
-          docker ps
-          echo "Pause for 10 seconds to let container start"
-          sleep 10
-          curl localhost:$port -vvv
-          docker push $ECR_REGISTRY/$ECR_REPO_PREFIX-${{ matrix.ecr_repo }}:$IMAGE_TAG
-          #changing code directory back to original for next iteration
-          cd - > /dev/null
-        #done
+        repo = ${{ matrix.ecr_repo }}
+        cd cats-and-dogs/$repo/
+        ls -ltra
+        docker build -t $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG .
+        docker run -d -p 80:80 --name ${{ matrix.ecr_repo }}-app $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG
+        docker ps
+        echo "Pause for 10 seconds to let container start"
+        sleep 10
+        curl localhost -vvv
+        docker push $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG
