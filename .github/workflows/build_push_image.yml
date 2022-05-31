@@ -31,7 +31,7 @@ jobs:
         ECR_REPO_PREFIX: assign1-dev
         IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
       run: |
-        repo = ${{ matrix.ecr_repo }}
+        repo=${{ matrix.ecr_repo }}
         cd cats-and-dogs/$repo/
         ls -ltra
         docker build -t $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG .
