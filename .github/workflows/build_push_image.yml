@@ -35,7 +35,7 @@ jobs:
         cd cats-and-dogs/$repo/
         ls -ltra
         docker build -t $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG .
-        docker run -d -p 80:80 --name ${{ matrix.ecr_repo }}-app $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG
+        docker run -d -p 80:80 --name $repo-app $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG
         docker ps
         echo "Pause for 10 seconds to let container start"
         sleep 10
