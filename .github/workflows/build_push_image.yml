@@ -37,16 +37,7 @@ jobs:
         cd cats-and-dogs/$repo/
         ls -ltra
         docker build -t $ECR_REGISTRY/$ECR_REPO_PREFIX-$repo:$IMAGE_TAG .
-        
-  test-image:    
-    name: Test Image
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        ecr_repo: [cats, dogs]
-        
-    steps:
+    
     - name: Test docker image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -57,16 +48,7 @@ jobs:
         echo "Pause for 10 seconds to let container start"
         sleep 10
         curl localhost -vvv
-       
-  push-image:    
-    name: Push Image to ECR
-    needs: test-image
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        ecr_repo: [cats, dogs]
 
-    steps:
     - name: Push docker image to ECR
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
