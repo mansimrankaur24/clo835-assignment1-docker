@@ -15,7 +15,7 @@ jobs:
     
     env:
       ECR_REPO_PREFIX: assign1-dev
-      IMAGE_TAG: v0.1
+      IMAGE_TAG: v0.2
       REPO: ${{ matrix.ecr_repo }}
       
     steps:
